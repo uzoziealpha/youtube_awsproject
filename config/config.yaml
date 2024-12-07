@@ -1,7 +1,8 @@
 youtube:
-  region_code: "US"
-  max_results: 10
+  region_code: "SG"  # Update the region code to Singapore if needed
+  max_results: 10  # Adjust the number of results as needed
 
 paths:
-  raw_data: "data/raw/trending_videos.csv"
-  processed_data: "data/processed/enriched_trending_videos.csv"
+  raw_data: "data/raw/trending_videos.csv"  # Path for storing raw data
+  processed_data: "data/processed/enriched_trending_videos.csv"  # Path for storing processed data
+  merged_data: "data/processed/merged_user_video_data.csv"  # Path for merged data after processing
