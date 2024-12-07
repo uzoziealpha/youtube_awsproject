@@ -1,0 +1,5 @@
+youtube:
+  region_code: "US"
+  max_results: 5
+paths:
+  raw_data: "data/raw/trending_videos.csv"

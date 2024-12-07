@@ -1,0 +1,4 @@
+pandas
+pyyaml
+google-api-python-client
+boto3
