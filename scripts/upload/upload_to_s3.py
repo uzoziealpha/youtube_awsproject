@@ -1,35 +1,16 @@
 import boto3
-import logging
-import os
-import yaml
 
-# Load configuration
-with open("config/config.yaml", "r") as f:
-    config = yaml.safe_load(f)
+# Configure the AWS S3 client
+s3_client = boto3.client('s3')
 
-# Set up logging
-logging.basicConfig(
-    filename="logs/upload_to_s3.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+def upload_file_to_s3(file_path, bucket_name, object_name=None):
+    if object_name is None:
+        object_name = file_path  # Use the file name if no object name is provided
+    try:
+        s3_client.upload_file(file_path, bucket_name, object_name)
+        print(f"File {file_path} uploaded to {bucket_name}/{object_name}")
+    except Exception as e:
+        print(f"Error uploading file: {e}")
 
-# Function to upload file to S3
-def upload_to_s3(file_path, bucket_name, s3_path):
-    s3 = boto3.client('s3')
-
-    if os.path.exists(file_path):
-        try:
-            s3.upload_file(file_path, bucket_name, s3_path)
-            logging.info(f"File {file_path} uploaded to s3://{bucket_name}/{s3_path}")
-        except Exception as e:
-            logging.error(f"Error uploading file: {e}")
-    else:
-        logging.error(f"File {file_path} not found!")
-
-if __name__ == "__main__":
-    upload_to_s3(
-        config["paths"]["processed_data"],
-        "your-bucket-name",
-        "processed_videos.csv"
-    )
+# Example usage
+upload_file_to_s3('data/raw/trending_videos.csv', 'youtube-data-singapore')
