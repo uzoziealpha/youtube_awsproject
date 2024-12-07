@@ -24,7 +24,6 @@ def setup_logging(log_file):
 # Fetch trending videos
 def fetch_trending_videos(youtube_api_key, region_code, max_results):
     youtube = build("youtube", "v3", developerKey=youtube_api_key)
-
     response = youtube.videos().list(
         part="snippet,statistics",
         chart="mostPopular",

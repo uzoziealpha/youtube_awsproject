@@ -1,5 +1,7 @@
 youtube:
   region_code: "US"
-  max_results: 5
+  max_results: 10
+
 paths:
   raw_data: "data/raw/trending_videos.csv"
+  processed_data: "data/processed/enriched_trending_videos.csv"
