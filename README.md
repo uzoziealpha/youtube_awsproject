@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # YouTube AWS Project
 
 This project extracts trending YouTube videos data using the YouTube Data API, processes the data, and uploads it to AWS S3.
@@ -13,3 +14,6 @@ This project extracts trending YouTube videos data using the YouTube Data API, p
 1. Install the necessary Python packages:
    ```bash
    pip install -r requirements.txt
+=======
+# youtube_awsproject
+>>>>>>> 50786924b245ea63016eb1f92f772a5f4acda1f5
