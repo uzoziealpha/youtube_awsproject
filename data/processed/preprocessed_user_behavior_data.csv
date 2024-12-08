@@ -1,0 +1,4 @@
+user_id,video_id,interaction_type,timestamp,watch_time,average_view_duration,likes,dislikes,comments,CTR,shares,device_type,traffic_source,audience_retention
+user123,abc123,view,2024-12-01T10:15:00,100,50,10,1,5,0.5,3,Mobile,Social Media,0.8
+user456,def456,view,2024-12-02T11:20:00,200,75,20,2,10,0.6,6,Desktop,Search Engine,0.85
+user789,abc123,comment,2024-12-03T14:35:00,150,65,15,3,8,0.55,4,Tablet,Direct,0.82

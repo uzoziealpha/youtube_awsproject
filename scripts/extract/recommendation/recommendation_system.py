@@ -1,115 +1,92 @@
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+import re
 
-# Path to the user behavior data
-user_behavior_data_path = 'data/processed/user_behavior_data.csv'
-
-# Function to load user behavior data with error handling
-def load_user_behavior_data(file_path):
+def load_and_merge_data(video_metadata_path, user_behavior_path):
+    """
+    Load and merge video metadata and user behavior data.
+    
+    Args:
+        video_metadata_path (str): Path to the video metadata CSV file.
+        user_behavior_path (str): Path to the user behavior data CSV file.
+    
+    Returns:
+        pd.DataFrame: Merged DataFrame containing video metadata and user behavior data.
+    """
     try:
-        # Load CSV data
-        df = pd.read_csv(file_path)
-        
-        # Check if the DataFrame is empty
-        if df.empty:
-            raise ValueError("The CSV file is empty.")
-        
+        # Load video metadata
+        video_metadata = pd.read_csv(video_metadata_path)
+        if video_metadata.empty:
+            raise ValueError("Video metadata file is empty or contains no columns.")
+        print("Video metadata loaded successfully.")
+        print(f"Columns in video metadata: {video_metadata.columns.tolist()}")
+
+        # Load user behavior data
+        user_behavior = pd.read_csv(user_behavior_path)
+        if user_behavior.empty:
+            raise ValueError("User behavior data file is empty or contains no columns.")
         print("User behavior data loaded successfully.")
-        print("Columns available in the dataset:", df.columns.tolist())
-        return df
-    except FileNotFoundError:
-        print(f"File not found: {file_path}. Please check the file path.")
-    except pd.errors.EmptyDataError:
-        print(f"Error: The file '{file_path}' is empty.")
-    except ValueError as ve:
-        print(ve)
+        print(f"Columns in user behavior data: {user_behavior.columns.tolist()}")
+
+        # Preview original data before any processing
+        print("\nOriginal preview of video metadata:")
+        print(video_metadata.head())
+
+        print("\nOriginal preview of user behavior data:")
+        print(user_behavior.head())
+
+        # Standardize video_id columns
+        def standardize_video_id(video_id):
+            if pd.isnull(video_id):
+                return None  # Handle NaN values
+            return re.sub(r'[^a-zA-Z0-9]', '', str(video_id)).lower()
+
+        video_metadata['video_id'] = video_metadata['video_id'].apply(standardize_video_id)
+        user_behavior['video_id'] = user_behavior['video_id'].apply(standardize_video_id)
+
+        # Drop rows with NaN video_id in user behavior data
+        user_behavior = user_behavior.dropna(subset=['video_id'])
+
+        # Print unique video IDs after standardization
+        print("\nUnique video IDs in video metadata after standardization:")
+        print(video_metadata['video_id'].unique())
+
+        print("\nUnique video IDs in user behavior data after standardization:")
+        print(user_behavior['video_id'].unique())
+
+        # Identify missing video_ids
+        missing_in_metadata = user_behavior[~user_behavior['video_id'].isin(video_metadata['video_id'])]['video_id']
+        missing_in_behavior = video_metadata[~video_metadata['video_id'].isin(user_behavior['video_id'])]['video_id']
+
+        if not missing_in_metadata.empty:
+            print("\nvideo_ids in user behavior data not in video metadata:")
+            print(missing_in_metadata)
+
+        if not missing_in_behavior.empty:
+            print("\nvideo_ids in video metadata not in user behavior data:")
+            print(missing_in_behavior)
+
+        # Merge the data
+        merged_data = pd.merge(video_metadata, user_behavior, on='video_id', how='inner')
+        if merged_data.empty:
+            raise ValueError("Merging resulted in an empty dataset. Check 'video_id' consistency.")
+        print("Data merged successfully.")
+        print(f"Columns in merged data: {merged_data.columns.tolist()}")
+        
+        return merged_data
+
     except Exception as e:
-        print(f"Error loading data: {e}")
+        print(f"Error loading or merging data: {e}")
+        return None
 
-# Preprocessing the data
-def preprocess_data(df):
-    # Fill missing values directly
-    df['watch_time'] = df['watch_time'].fillna(df['watch_time'].mean())
-    df['average_view_duration'] = df['average_view_duration'].fillna(df['average_view_duration'].mean())
-    df['likes'] = df['likes'].fillna(0)
-    df['dislikes'] = df['dislikes'].fillna(0)
-    df['comments'] = df['comments'].fillna(0)
-    df['CTR'] = df['CTR'].fillna(0)
-    df['shares'] = df['shares'].fillna(0)
-    df['device_type'] = df['device_type'].fillna('Unknown')
-    df['traffic_source'] = df['traffic_source'].fillna('Unknown')
-    df['audience_retention'] = df['audience_retention'].fillna('0%')
-    
-    return df
-
-# Feature Engineering: Textual data from description and numeric data (view_count, like_count)
-def feature_engineering(df):
-    # TF-IDF Vectorizer for the 'title' column (to handle text-based features)
-    tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = tfidf_vectorizer.fit_transform(df['title'])
-    
-    # Combine numerical features (watch_time, average_view_duration, likes, dislikes, etc.)
-    numeric_features = df[['watch_time', 'average_view_duration', 'likes', 'dislikes', 'comments', 'CTR', 'shares']].values
-    return tfidf_matrix, numeric_features
-
-# Recommendation Model using Cosine Similarity
-def build_recommendation_system(df):
-    tfidf_matrix, numeric_features = feature_engineering(df)
-
-    # Compute cosine similarity for the title (TF-IDF)
-    cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
-
-    # Normalize the numeric features using cosine similarity
-    numeric_sim = cosine_similarity(numeric_features, numeric_features)
-
-    # Combine both similarities
-    combined_sim = (cosine_sim + numeric_sim) / 2  # Adjust the weight as necessary
-
-    return combined_sim
-
-# Get recommendations based on a video index
-def get_recommendations(df, video_index, num_recommendations=10):
-    combined_sim = build_recommendation_system(df)
-    
-    # Get similarity scores for the given video
-    similarity_scores = list(enumerate(combined_sim[video_index]))
-    
-    # Sort the videos by similarity scores
-    sorted_scores = sorted(similarity_scores, key=lambda x: x[1], reverse=True)
-    
-    # Get the top recommended videos (excluding the video itself)
-    recommended_videos = sorted_scores[1:num_recommendations+1]
-    
-    recommendations = []
-    for idx, score in recommended_videos:
-        recommendations.append({
-            "video_id": df.iloc[idx]["video_id"],
-            "title": df.iloc[idx]["title"],
-            "similarity_score": score
-        })
-    
-    return recommendations
-
-# Testing the recommendation system
-def test_recommendation_system():
-    df = load_user_behavior_data(user_behavior_data_path)
-    
-    if df is not None:
-        df = preprocess_data(df)
-        
-        # Choose a sample video index (e.g., 0, you can change it to test other videos)
-        video_index = 0
-        print(f"Recommendations for Video: {df.iloc[video_index]['title']}")
-        
-        recommendations = get_recommendations(df, video_index, num_recommendations=10)
-        
-        for rec in recommendations:
-            try:
-                print(f"Recommended Video: {rec['title']}, Similarity Score: {rec['similarity_score']}")
-            except UnicodeEncodeError:
-                print(f"Recommended Video: {rec['title'].encode('utf-8', 'ignore').decode('utf-8')}, Similarity Score: {rec['similarity_score']}")
-
+# Example usage of the function
 if __name__ == "__main__":
-    test_recommendation_system()
+    video_metadata_path = 'data/processed/video_metadata.csv'  # Path to video metadata
+    user_behavior_path = 'data/processed/preprocessed_user_behavior_data.csv'  # Path to preprocessed user behavior data
+
+    merged_data = load_and_merge_data(video_metadata_path, user_behavior_path)
+
+    if merged_data is not None and not merged_data.empty:
+        # Proceed with further processing if data is successfully loaded and merged
+        print("Proceeding with recommendation system processing...")
+    else:
+        print("Data merging failed. Please check the debug outputs for issues.")

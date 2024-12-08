@@ -1,30 +1,27 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 
-def preprocess_user_behavior(data_path, output_path):
+def preprocess_user_behavior(data_path, save_path):
     """
     Preprocess user behavior data: handle missing values, normalize, and scale features.
 
     Args:
         data_path (str): Path to the user behavior data CSV file.
-        output_path (str): Path to save the preprocessed user behavior data.
+        save_path (str): Path to save the preprocessed user behavior data.
+
+    Returns:
+        pd.DataFrame: Preprocessed user behavior DataFrame.
     """
     try:
         # Load the user behavior data
         df = pd.read_csv(data_path)
         print("User behavior data loaded successfully.")
-        if df.empty:
-            raise ValueError("User behavior data file is empty.")
+        
+        # Display the columns
         print(f"Columns available in the dataset: {df.columns.tolist()}")
 
-        # Convert percentage columns to numeric by removing the '%' and handling errors
-        percentage_columns = ['watch_time', 'average_view_duration', 'CTR', 'audience_retention']
-        for col in percentage_columns:
-            if col in df.columns:
-                # Convert the column to strings first, then replace '%' and convert to numeric
-                df[col] = pd.to_numeric(df[col].astype(str).str.replace('%', ''), errors='coerce')
-
-        # Fill missing values with the median for numeric columns
+        # Handle missing values
         numeric_cols = ['watch_time', 'average_view_duration', 'likes', 'dislikes',
                         'comments', 'CTR', 'shares', 'audience_retention']
         for col in numeric_cols:
@@ -36,8 +33,8 @@ def preprocess_user_behavior(data_path, output_path):
         df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
 
         # Save the preprocessed data
-        df.to_csv(output_path, index=False)
-        print("Preprocessed data saved to", output_path)
+        df.to_csv(save_path, index=False)
+        print(f"Preprocessed data saved to {save_path}")
 
         print("User behavior data preprocessing completed.")
         return df
@@ -46,9 +43,8 @@ def preprocess_user_behavior(data_path, output_path):
         print(f"Error preprocessing user behavior data: {e}")
         return None
 
-# Example usage of the function
+# Example usage
 if __name__ == "__main__":
-    data_path = 'data/raw/user_behavior_data.csv'  # Path to raw data
-    output_path = 'data/processed/preprocessed_user_behavior_data.csv'  # Path to save preprocessed data
-
-    preprocess_user_behavior(data_path, output_path)
+    data_path = "data/processed/user_behavior_data.csv"
+    save_path = "data/processed/preprocessed_user_behavior_data.csv"
+    preprocess_user_behavior(data_path, save_path)
