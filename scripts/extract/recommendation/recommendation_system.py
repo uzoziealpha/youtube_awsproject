@@ -90,3 +90,8 @@ if __name__ == "__main__":
         print("Proceeding with recommendation system processing...")
     else:
         print("Data merging failed. Please check the debug outputs for issues.")
+        
+    # Add this part at the end of the merge function
+merged_data_path = 'data/processed/merged_data.csv'
+merged_data.to_csv(merged_data_path, index=False)
+print(f"Merged data saved to {merged_data_path}")
